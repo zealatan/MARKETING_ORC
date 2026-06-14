@@ -11,7 +11,6 @@ from .formatting import format_year, format_amount, format_percent, get_currency
 from .charts import (
     add_high_low_markers,
     add_trigger_buy_markers,
-    annual_dividend_income_chart,
     dividend_bar_chart,
     investment_comparison_chart,
     investment_quantity_chart,
@@ -1348,48 +1347,6 @@ def render_invest_quantity_tab(
 
     if fig is None:
         st.warning("연도별 보유 수량 데이터를 추출할 수 없습니다. (Total Shares 컬럼 누락)")
-        return
-
-    st.plotly_chart(fig, use_container_width=True)
-
-
-# ── Annual dividend income tab (yearly net dividend bars) ─────────────────────
-
-def render_annual_dividend_income_tab(
-    inp: UserInput,
-    config: MarketConfig,
-    result: AnalysisResult,
-    no_reinvest=None,
-    reinvest=None,
-    reinvest_enabled: bool = False,
-) -> None:
-    """Full-size yearly dividend-income bar chart for the 연배당금 tab."""
-    st.subheader("연도별 연배당금")
-    st.caption("보유 수량과 배당 데이터를 기반으로 연도별 배당금을 표시합니다.")
-
-    if no_reinvest is None:
-        st.warning("연배당금 데이터를 계산할 수 없습니다. 초기 투자금과 가격 데이터를 확인하세요.")
-        return
-
-    show_reinvest = bool(
-        reinvest_enabled
-        and reinvest is not None
-        and not reinvest.timeline_df.empty
-    )
-
-    fig = annual_dividend_income_chart(
-        inp,
-        config,
-        no_reinvest,
-        reinvest=reinvest if show_reinvest else None,
-        show_reinvest=show_reinvest,
-    )
-
-    if fig is None:
-        st.warning(
-            "연도별 배당금 데이터를 추출할 수 없습니다. "
-            "(Net Dividend / Gross Dividend 등 사용 가능한 컬럼 없음)"
-        )
         return
 
     st.plotly_chart(fig, use_container_width=True)

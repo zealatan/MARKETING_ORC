@@ -35,7 +35,6 @@ def run_dividend_reinvest_backtest(
     initial_amount: float,
     monthly_amount: float,
     tax_rate_pct: float,
-    reinvest_dividends: bool = True,
 ) -> Optional[DividendReinvestResult]:
     close = close.dropna().copy()
     if close.empty or initial_amount <= 0:
@@ -71,7 +70,6 @@ def run_dividend_reinvest_backtest(
         )
 
     shares = 0.0
-    cash = 0.0
     total_external_invested = 0.0
     cumulative_gross_dividend = 0.0
     cumulative_tax = 0.0
@@ -113,23 +111,16 @@ def run_dividend_reinvest_backtest(
             gross_dividend = shares * div_per_share
             tax = gross_dividend * tax_rate
             net_dividend = gross_dividend - tax
+            reinvest_shares = net_dividend / price if price > 0 else 0.0
 
             cumulative_gross_dividend += gross_dividend
             cumulative_tax += tax
             cumulative_net_dividend += net_dividend
-
-            if reinvest_dividends:
-                reinvest_shares = net_dividend / price if price > 0 else 0.0
-                cumulative_reinvested_amount += net_dividend
-                shares += reinvest_shares
-                event_type = "Dividend Reinvest"
-            else:
-                reinvest_shares = 0.0
-                cash += net_dividend
-                event_type = "Dividend Cash"
+            cumulative_reinvested_amount += net_dividend
+            shares += reinvest_shares
 
             event_rows.append({
-                "Date": d, "Type": event_type, "Price": price,
+                "Date": d, "Type": "Dividend Reinvest", "Price": price,
                 "Cash Amount": net_dividend, "Gross Dividend": gross_dividend,
                 "Tax": tax, "Net Dividend": net_dividend,
                 "Dividend per Share": div_per_share,
@@ -138,14 +129,13 @@ def run_dividend_reinvest_backtest(
                 "Original Dividend Date": original_div_date,
             })
 
-        value = shares * price + cash
+        value = shares * price
         pnl = value - total_external_invested
         ret_pct = pnl / total_external_invested * 100.0 if total_external_invested > 0 else 0.0
         timeline_rows.append({
             "Date": d, "Price": price, "Total Shares": shares,
             "External Invested": total_external_invested,
             "Portfolio Value": value, "PnL": pnl, "Return %": ret_pct,
-            "Cash": cash,
             "Cumulative Gross Dividend": cumulative_gross_dividend,
             "Cumulative Tax": cumulative_tax,
             "Cumulative Net Dividend": cumulative_net_dividend,
@@ -156,7 +146,7 @@ def run_dividend_reinvest_backtest(
     event_df = pd.DataFrame(event_rows)
 
     final_price = float(close.iloc[-1])
-    final_value = shares * final_price + cash
+    final_value = shares * final_price
     total_profit = final_value - total_external_invested
     total_return_pct = (
         total_profit / total_external_invested * 100.0
@@ -188,7 +178,7 @@ def run_dividend_reinvest_backtest(
     if event_df.empty:
         annual_df = pd.DataFrame()
     else:
-        div_events = event_df[event_df["Type"].isin(["Dividend Reinvest", "Dividend Cash"])].copy()
+        div_events = event_df[event_df["Type"] == "Dividend Reinvest"].copy()
         if div_events.empty:
             annual_df = pd.DataFrame()
         else:

@@ -5,8 +5,6 @@ import plotly.graph_objects as go
 
 from .market_config import AnalysisResult, MarketConfig, UserInput
 from .analysis import fmt_money
-from .config import get_market_rule
-from .formatting import get_currency_symbol
 from .golden_engine import add_high_low_markers as _golden_add_hl_markers
 
 CHART_HEIGHT_PRICE = 720
@@ -420,119 +418,6 @@ def investment_quantity_chart(
     )
     fig.update_xaxes(title="Year", type="category", **_AXIS)
     fig.update_yaxes(title="Shares", **_AXIS)
-    return fig
-
-
-def _yearly_dividend_income(result) -> tuple[pd.DataFrame, str]:
-    """Return (yearly DataFrame with columns [Year, Income], source_label).
-
-    Picks the best available column from result.annual_df in this priority:
-    1. ``Net Dividend`` (already grouped per year)
-    2. yearly diff of ``Cumulative Net Dividend``
-    3. ``Gross Dividend`` (already grouped per year)
-
-    Returns an empty DataFrame + empty source label when no usable column is found.
-    """
-    if result is None:
-        return pd.DataFrame(columns=["Year", "Income"]), ""
-
-    annual_df = getattr(result, "annual_df", None)
-    if annual_df is None or annual_df.empty or "Year" not in annual_df.columns:
-        return pd.DataFrame(columns=["Year", "Income"]), ""
-
-    if "Net Dividend" in annual_df.columns:
-        out = annual_df[["Year", "Net Dividend"]].rename(columns={"Net Dividend": "Income"})
-        return out.sort_values("Year").reset_index(drop=True), "Net Dividend"
-
-    if "Cumulative Net Dividend" in annual_df.columns:
-        s = annual_df.sort_values("Year").reset_index(drop=True)
-        income = s["Cumulative Net Dividend"].diff()
-        income.iloc[0] = s["Cumulative Net Dividend"].iloc[0]
-        out = pd.DataFrame({"Year": s["Year"], "Income": income})
-        return out, "Cumulative Net Dividend (yearly diff)"
-
-    if "Gross Dividend" in annual_df.columns:
-        out = annual_df[["Year", "Gross Dividend"]].rename(columns={"Gross Dividend": "Income"})
-        return out.sort_values("Year").reset_index(drop=True), "Gross Dividend"
-
-    return pd.DataFrame(columns=["Year", "Income"]), ""
-
-
-def annual_dividend_income_chart(
-    inp: UserInput,
-    config: MarketConfig,
-    no_reinvest,
-    reinvest=None,
-    show_reinvest: bool = False,
-) -> go.Figure | None:
-    """Yearly net-dividend-income bars. OFF = base only; ON = stacked base + reinvest extra.
-
-    Returns ``None`` when no usable income data is available — the UI caller
-    should display a warning instead of rendering an empty chart.
-    """
-    base_yearly, base_source = _yearly_dividend_income(no_reinvest)
-    if base_yearly.empty:
-        return None
-
-    currency = get_market_rule(config.key)["currency"]
-    symbol = get_currency_symbol(currency)
-    y_axis_title = f"Dividend Income ({currency})"
-    hover_base = "%{x}<br>기본 연배당금: " + symbol + "%{y:,.0f} " + currency + "<extra></extra>"
-    hover_extra = "%{x}<br>배당 재투자 추가 연배당금: +" + symbol + "%{y:,.0f} " + currency + "<extra></extra>"
-
-    fig = go.Figure()
-
-    if show_reinvest and reinvest is not None:
-        reinvest_yearly, _ = _yearly_dividend_income(reinvest)
-        if not reinvest_yearly.empty:
-            merged = base_yearly.merge(
-                reinvest_yearly, on="Year", how="outer", suffixes=("_base", "_reinvest"),
-            ).sort_values("Year")
-            merged["Income_base"] = merged["Income_base"].fillna(0.0)
-            merged["Income_reinvest"] = merged["Income_reinvest"].fillna(0.0)
-            merged["Extra"] = (merged["Income_reinvest"] - merged["Income_base"]).clip(lower=0.0)
-
-            x_years = merged["Year"].astype(int).astype(str).tolist()
-            fig.add_trace(go.Bar(
-                x=x_years,
-                y=merged["Income_base"].astype(float).tolist(),
-                name="기본 연배당금",
-                marker_color="#8a8f7a",
-                hovertemplate=hover_base,
-            ))
-            fig.add_trace(go.Bar(
-                x=x_years,
-                y=merged["Extra"].astype(float).tolist(),
-                name="배당 재투자 추가 연배당금",
-                marker_color=config.line,
-                hovertemplate=hover_extra,
-            ))
-        else:
-            fig.add_trace(go.Bar(
-                x=base_yearly["Year"].astype(int).astype(str).tolist(),
-                y=base_yearly["Income"].astype(float).tolist(),
-                name="기본 연배당금",
-                marker_color="#8a8f7a",
-                hovertemplate=hover_base,
-            ))
-    else:
-        fig.add_trace(go.Bar(
-            x=base_yearly["Year"].astype(int).astype(str).tolist(),
-            y=base_yearly["Income"].astype(float).tolist(),
-            name="기본 연배당금",
-            marker_color="#8a8f7a",
-            hovertemplate=hover_base,
-        ))
-
-    fig.update_layout(
-        title="연도별 연배당금",
-        barmode="stack",
-        hovermode="x unified",
-        legend=dict(orientation="h", y=-0.13),
-        **{**_LAYOUT_BASE, "height": 660},
-    )
-    fig.update_xaxes(title="Year", type="category", **_AXIS)
-    fig.update_yaxes(title=y_axis_title, tickprefix=symbol, separatethousands=True, **_AXIS)
     return fig
 
 

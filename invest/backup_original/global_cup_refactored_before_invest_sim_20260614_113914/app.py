@@ -7,12 +7,10 @@ from global_cup.analysis import run_analysis
 from global_cup.dividend_reinvest import run_dividend_reinvest_backtest
 from global_cup.ui import (
     inject_css,
-    render_annual_dividend_income_tab,
     render_controls,
     render_data_range_info,
     render_dividend_tab,
-    render_invest_quantity_tab,
-    render_invest_simulation_tab,
+    render_dividend_reinvest_tab,
     render_market_header,
     render_market_selector,
     render_price_tab,
@@ -75,24 +73,12 @@ reinvest_result = run_dividend_reinvest_backtest(
     tax_rate_pct=reinvest_params["tax_rate_pct"],
 )
 
-no_reinvest_result = run_dividend_reinvest_backtest(
-    close=analysis.close,
-    dividends=analysis.dividends,
-    initial_amount=reinvest_params["initial_amount"],
-    monthly_amount=reinvest_params["monthly_amount"],
-    tax_rate_pct=reinvest_params["tax_rate_pct"],
-    reinvest_dividends=False,
-)
-
-reinvest_enabled = reinvest_params["reinvest_enabled"]
-selected_result = reinvest_result if reinvest_enabled else no_reinvest_result
-
 with data_range_container:
     render_data_range_info(analysis, user_input.start_date)
 
 with reinvest_summary_container:
     render_reinvest_summary_left(
-        selected_result,
+        reinvest_result,
         reinvest_params["currency"],
         reinvest_params["tax_rate_pct"],
     )
@@ -102,13 +88,11 @@ with reinvest_summary_container:
 with right:
     st.markdown('<div style="height:18.0rem;"></div>', unsafe_allow_html=True)
 
-    price_tab, dividend_tab, invest_result_tab, invest_quantity_tab, annual_dividend_income_tab = st.tabs(
+    price_tab, dividend_tab, reinvest_tab = st.tabs(
         [
             "가격 / 전고점 / 트리거",
             "배당",
-            "투자 시뮬레이션",
-            "투자 수량",
-            "연배당금",
+            "배당 재투자",
         ]
     )
 
@@ -120,35 +104,14 @@ with right:
         render_dividend_tab(config, analysis)
         #render_recent_data(analysis, config=config)
 
-    with invest_result_tab:
-        render_invest_simulation_tab(
+    with reinvest_tab:
+        render_dividend_reinvest_tab(
             user_input,
             config,
             analysis,
             reinvest=reinvest_result,
-            no_reinvest=no_reinvest_result,
-            reinvest_enabled=reinvest_enabled,
         )
-
-    with invest_quantity_tab:
-        render_invest_quantity_tab(
-            user_input,
-            config,
-            analysis,
-            no_reinvest=no_reinvest_result,
-            reinvest=reinvest_result,
-            reinvest_enabled=reinvest_enabled,
-        )
-
-    with annual_dividend_income_tab:
-        render_annual_dividend_income_tab(
-            user_input,
-            config,
-            analysis,
-            no_reinvest=no_reinvest_result,
-            reinvest=reinvest_result,
-            reinvest_enabled=reinvest_enabled,
-        )
+        #render_recent_data(analysis, config=config)
 
 st.caption(
     "Data source: yfinance. "

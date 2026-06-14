@@ -11,16 +11,12 @@ from .formatting import format_year, format_amount, format_percent, get_currency
 from .charts import (
     add_high_low_markers,
     add_trigger_buy_markers,
-    annual_dividend_income_chart,
     dividend_bar_chart,
     investment_comparison_chart,
-    investment_quantity_chart,
-    investment_simulation_chart,
     price_chart,
     reinvest_timeline_chart,
     score_gauge_chart,
     share_count_chart,
-    share_quantity_comparison_bar_chart,
 )
 from .config import LANDING_URL, TRIGGER_DEFAULT, get_market_rule
 from .dividend_reinvest import run_dividend_reinvest_backtest
@@ -1104,26 +1100,6 @@ def render_dividend_tab(config: MarketConfig, result: AnalysisResult) -> None:
 
     div_df = result.annual_dividend_df.copy()
 
-    # Append Dividend Yield column (DPS / end-of-year close * 100) right after Dividend per Share.
-    if (
-        "Year" in div_df.columns
-        and "Dividend per Share" in div_df.columns
-        and result.price_df is not None
-        and not result.price_df.empty
-        and "Close" in result.price_df.columns
-    ):
-        close = result.price_df["Close"]
-        close_idx = pd.to_datetime(close.index)
-        yearly_close = close.groupby(close_idx.year).last()
-        years_int = pd.to_numeric(div_df["Year"], errors="coerce").astype("Int64")
-        end_close = years_int.map(lambda y: yearly_close.get(int(y)) if pd.notna(y) else None)
-        dps = pd.to_numeric(div_df["Dividend per Share"], errors="coerce")
-        end_close_num = pd.to_numeric(end_close, errors="coerce")
-        yield_pct = (dps / end_close_num) * 100.0
-        yield_pct = yield_pct.where(end_close_num.gt(0))
-        insert_at = div_df.columns.get_loc("Dividend per Share") + 1
-        div_df.insert(insert_at, "Dividend Yield", yield_pct.values)
-
     # 10년 단위 chunk
     chunk_size = 10
     chunks = [
@@ -1282,116 +1258,22 @@ def render_invest_simulation_tab(
     inp: UserInput,
     config: MarketConfig,
     result: AnalysisResult,
-    reinvest=None,
-    no_reinvest=None,
-    reinvest_enabled: bool = False,
+    selected=None,
 ) -> None:
-    """No-reinvest baseline chart, with reinvest curve overlaid when checkbox is on."""
-    st.subheader("투자 시뮬레이션")
-    st.caption(
-        "기준은 항상 배당 미재투자입니다. "
-        "'배당 재투자' 체크 시 재투자 곡선이 같은 차트에 함께 표시됩니다."
-    )
+    """Portfolio-growth view for the currently selected scenario only."""
+    st.subheader("현재 시뮬레이션 결과")
+    st.caption("배당 재투자 설정에 따라 결과가 달라집니다.")
 
-    if no_reinvest is None or no_reinvest.timeline_df.empty:
+    if selected is None:
+        st.info("투자 시뮬레이션 결과를 계산할 수 없습니다.")
+        return
+
+    if selected.timeline_df.empty:
         st.warning("시뮬레이션 타임라인 데이터가 없습니다.")
         return
 
-    show_reinvest = bool(
-        reinvest_enabled
-        and reinvest is not None
-        and not reinvest.timeline_df.empty
-    )
-
-    reinvest_df = reinvest.timeline_df if show_reinvest else None
-    value_fig = investment_simulation_chart(
-        inp,
-        config,
-        no_reinvest.timeline_df,
-        reinvest_df=reinvest_df,
-        show_reinvest=show_reinvest,
-    )
-    st.plotly_chart(value_fig, use_container_width=True)
-
-
-# ── Invest quantity tab (yearly share count bars) ─────────────────────────────
-
-def render_invest_quantity_tab(
-    inp: UserInput,
-    config: MarketConfig,
-    result: AnalysisResult,
-    no_reinvest=None,
-    reinvest=None,
-    reinvest_enabled: bool = False,
-) -> None:
-    """Full-size yearly share-quantity bar chart for the 투자 수량 tab."""
-    st.subheader("연도별 보유 수량")
-    st.caption("배당 재투자 여부에 따른 연도별 주식 보유 수량 변화를 표시합니다.")
-
-    if no_reinvest is None or no_reinvest.timeline_df.empty:
-        st.warning("보유 수량 데이터를 계산할 수 없습니다. 초기 투자금과 가격 데이터를 확인하세요.")
-        return
-
-    show_reinvest = bool(
-        reinvest_enabled
-        and reinvest is not None
-        and not reinvest.timeline_df.empty
-    )
-
-    fig = investment_quantity_chart(
-        inp,
-        config,
-        no_reinvest,
-        reinvest=reinvest if show_reinvest else None,
-        show_reinvest=show_reinvest,
-    )
-
-    if fig is None:
-        st.warning("연도별 보유 수량 데이터를 추출할 수 없습니다. (Total Shares 컬럼 누락)")
-        return
-
-    st.plotly_chart(fig, use_container_width=True)
-
-
-# ── Annual dividend income tab (yearly net dividend bars) ─────────────────────
-
-def render_annual_dividend_income_tab(
-    inp: UserInput,
-    config: MarketConfig,
-    result: AnalysisResult,
-    no_reinvest=None,
-    reinvest=None,
-    reinvest_enabled: bool = False,
-) -> None:
-    """Full-size yearly dividend-income bar chart for the 연배당금 tab."""
-    st.subheader("연도별 연배당금")
-    st.caption("보유 수량과 배당 데이터를 기반으로 연도별 배당금을 표시합니다.")
-
-    if no_reinvest is None:
-        st.warning("연배당금 데이터를 계산할 수 없습니다. 초기 투자금과 가격 데이터를 확인하세요.")
-        return
-
-    show_reinvest = bool(
-        reinvest_enabled
-        and reinvest is not None
-        and not reinvest.timeline_df.empty
-    )
-
-    fig = annual_dividend_income_chart(
-        inp,
-        config,
-        no_reinvest,
-        reinvest=reinvest if show_reinvest else None,
-        show_reinvest=show_reinvest,
-    )
-
-    if fig is None:
-        st.warning(
-            "연도별 배당금 데이터를 추출할 수 없습니다. "
-            "(Net Dividend / Gross Dividend 등 사용 가능한 컬럼 없음)"
-        )
-        return
-
+    fig = reinvest_timeline_chart(inp, config, selected.timeline_df)
+    fig.update_layout(height=660)
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -1553,14 +1435,6 @@ def _dividend_table_html(div_df: pd.DataFrame, currency_code: str = "USD") -> st
                 cells += f"<td>{yr_str}{badge}</td>"
             elif col == div_col:
                 cells += f"<td>{format_amount(val, currency_code)}</td>"
-            elif col == "Dividend Yield":
-                if pd.notna(val):
-                    try:
-                        cells += f"<td>{float(val):.2f}%</td>"
-                    except (TypeError, ValueError):
-                        cells += "<td>-</td>"
-                else:
-                    cells += "<td>-</td>"
             else:
                 # Any other numeric columns: plain format
                 try:
