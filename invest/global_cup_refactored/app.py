@@ -90,21 +90,24 @@ selected_result = reinvest_result if reinvest_enabled else no_reinvest_result
 with data_range_container:
     render_data_range_info(analysis, user_input.start_date)
 
+trigger_count = len(analysis.backtest_df) if analysis.backtest_df is not None else 0
+
 with reinvest_summary_container:
     render_reinvest_summary_left(
         selected_result,
         reinvest_params["currency"],
         reinvest_params["tax_rate_pct"],
+        trigger_count=trigger_count,
     )
 
 # ── Right column: tabs ────────────────────────────────────────────────────────
 
 with right:
-    st.markdown('<div style="height:18.0rem;"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="right-col-spacer" style="height:18.0rem;"></div>', unsafe_allow_html=True)
 
     price_tab, dividend_tab, invest_result_tab, invest_quantity_tab, annual_dividend_income_tab = st.tabs(
         [
-            "가격 / 전고점 / 트리거",
+            "가격",
             "배당",
             "투자 시뮬레이션",
             "투자 수량",

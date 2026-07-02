@@ -88,6 +88,145 @@ def get_flag_class(config: MarketConfig) -> str:
     return mapping.get(config.key, "flag-glb")
 
 
+# ── Accurate inline-SVG flags ─────────────────────────────────────────────────
+# Drawn to official specs so they render identically on every platform.
+
+import math as _math
+
+_SVG_ATTRS = (
+    'xmlns="http://www.w3.org/2000/svg" '
+    'style="width:40px;height:auto;display:block;border-radius:5px;'
+    'box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);"'
+)
+
+
+def _star_points(cx: float, cy: float, r_out: float, r_in: float, rot: float = -90.0) -> str:
+    """Return polygon points for a 5-point star centred at (cx, cy)."""
+    pts = []
+    for k in range(5):
+        a_out = _math.radians(rot + k * 72)
+        a_in = _math.radians(rot + 36 + k * 72)
+        pts.append((cx + r_out * _math.cos(a_out), cy + r_out * _math.sin(a_out)))
+        pts.append((cx + r_in * _math.cos(a_in), cy + r_in * _math.sin(a_in)))
+    return " ".join(f"{x:.2f},{y:.2f}" for x, y in pts)
+
+
+def _flag_svg_jp() -> str:
+    # 2:3 field, white; red disc (Hinomaru) diameter = 3/5 of height, centred.
+    return (
+        f'<svg viewBox="0 0 60 40" {_SVG_ATTRS}>'
+        '<rect width="60" height="40" fill="#fff"/>'
+        '<circle cx="30" cy="20" r="12" fill="#BC002D"/></svg>'
+    )
+
+
+def _flag_svg_us() -> str:
+    # 10:19 field, 13 stripes (7 red), blue union over top 7 stripes, 50 white stars.
+    sh = 100 / 13  # stripe height
+    stripes = "".join(
+        f'<rect y="{i * sh:.3f}" width="190" height="{sh:.3f}" fill="#B22234"/>'
+        for i in range(0, 13, 2)
+    )
+    union_h = 7 * sh
+    stars = ""
+    for row in range(9):
+        y = 3.4 + row * (union_h - 6.8) / 8
+        n, x0 = (6, 6) if row % 2 == 0 else (5, 12)
+        for c in range(n):
+            stars += f'<circle cx="{x0 + c * 12:.1f}" cy="{y:.2f}" r="2" fill="#fff"/>'
+    return (
+        f'<svg viewBox="0 0 190 100" {_SVG_ATTRS}>'
+        '<rect width="190" height="100" fill="#fff"/>'
+        f'{stripes}'
+        f'<rect width="76" height="{union_h:.2f}" fill="#3C3B6E"/>'
+        f'{stars}</svg>'
+    )
+
+
+def _flag_svg_eu() -> str:
+    # 2:3 blue field; 12 gold five-point stars evenly on a centred circle.
+    cx, cy, ring = 45, 30, 20
+    stars = ""
+    for i in range(12):
+        a = _math.radians(i * 30)
+        sx = cx + ring * _math.sin(a)
+        sy = cy - ring * _math.cos(a)
+        stars += f'<polygon points="{_star_points(sx, sy, 4.2, 1.7)}" fill="#FFCC00"/>'
+    return (
+        f'<svg viewBox="0 0 90 60" {_SVG_ATTRS}>'
+        '<rect width="90" height="60" fill="#003399"/>'
+        f'{stars}</svg>'
+    )
+
+
+def _kr_trigram(pattern) -> str:
+    """3 stacked bars; pattern = list of 3 (True=solid, False=broken), top→bottom."""
+    bars = ""
+    for j, solid in enumerate(pattern):
+        y = -3.6 + j * 3.6 - 0.9
+        if solid:
+            bars += f'<rect x="-6.5" y="{y:.2f}" width="13" height="1.8"/>'
+        else:
+            bars += (
+                f'<rect x="-6.5" y="{y:.2f}" width="5.2" height="1.8"/>'
+                f'<rect x="1.3" y="{y:.2f}" width="5.2" height="1.8"/>'
+            )
+    return bars
+
+
+def _flag_svg_kr() -> str:
+    # 2:3 white field; taegeuk (red top / blue bottom); 4 trigrams per official spec:
+    #   TL Geon ☰ | TR Ri ☲ | BL Gam ☵ | BR Gon ☷
+    cx, cy, R = 45.0, 30.0, 15.0
+    taegeuk = (
+        f'<circle cx="{cx}" cy="{cy}" r="{R}" fill="#0047A0"/>'
+        f'<path d="M{cx},{cy - R} a{R},{R} 0 0,1 0,{2 * R} '
+        f'a{R / 2},{R / 2} 0 0,1 0,{-R} a{R / 2},{R / 2} 0 0,0 0,{-R} z" '
+        f'fill="#CD2E3A" transform="rotate(-90 {cx} {cy})"/>'
+    )
+    S, B = True, False
+    corners = [
+        (17.1, 11.4, 33.69, [S, S, S]),   # top-left     Geon ☰
+        (72.9, 11.4, -33.69, [S, B, S]),  # top-right    Ri   ☲
+        (17.1, 48.6, -33.69, [B, S, B]),  # bottom-left  Gam  ☵
+        (72.9, 48.6, 33.69, [B, B, B]),   # bottom-right Gon  ☷
+    ]
+    tg = "".join(
+        f'<g transform="translate({x},{y}) rotate({rot})" fill="#000">{_kr_trigram(pat)}</g>'
+        for x, y, rot, pat in corners
+    )
+    return (
+        f'<svg viewBox="0 0 90 60" {_SVG_ATTRS}>'
+        '<rect width="90" height="60" fill="#fff"/>'
+        f'{taegeuk}{tg}</svg>'
+    )
+
+
+def _flag_svg_globe() -> str:
+    # Simple stylised globe for the "Global" market.
+    return (
+        f'<svg viewBox="0 0 60 60" {_SVG_ATTRS.replace("height:auto", "height:40px")}>'
+        '<circle cx="30" cy="30" r="28" fill="#1d6fd6"/>'
+        '<path d="M12 22 q8 -6 16 -2 q6 3 4 9 q-3 5 -10 3 q-8 -2 -10 -10z" fill="#3ca55c"/>'
+        '<path d="M34 34 q7 -3 12 2 q3 5 -3 9 q-8 3 -11 -4 q-2 -5 2 -7z" fill="#3ca55c"/>'
+        '<g fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1">'
+        '<circle cx="30" cy="30" r="28"/>'
+        '<ellipse cx="30" cy="30" rx="12" ry="28"/>'
+        '<line x1="2" y1="30" x2="58" y2="30"/></g></svg>'
+    )
+
+
+def get_flag_svg(market_key: str) -> str:
+    """Return an accurate inline-SVG flag for the given market key."""
+    builders = {
+        "Japan": _flag_svg_jp,
+        "United States": _flag_svg_us,
+        "European Union": _flag_svg_eu,
+        "Korea": _flag_svg_kr,
+    }
+    return builders.get(market_key, _flag_svg_globe)()
+
+
 # ── Base ticker dictionaries (fallback when CSV files are absent) ──────────────
 
 _US_TICKERS_BASE: Dict[str, str] = {

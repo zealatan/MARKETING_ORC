@@ -24,7 +24,14 @@ from .charts import (
 )
 from .config import LANDING_URL, TRIGGER_DEFAULT, get_market_rule
 from .dividend_reinvest import run_dividend_reinvest_backtest
-from .market_config import MARKETS, AnalysisResult, MarketConfig, UserInput, get_flag_class
+from .market_config import (
+    MARKETS,
+    AnalysisResult,
+    MarketConfig,
+    UserInput,
+    get_flag_class,
+    get_flag_svg,
+)
 from .scoring import ScoreResult, calculate_score, get_rank_color, get_rank_medal
 
 
@@ -48,14 +55,21 @@ _CSS = """
     color: var(--cream);
 }
 
-.main .block-container {
+.main .block-container,
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"],
+section[data-testid="stMain"] .block-container {
     max-width: 1240px;
-    padding-top: 0.7rem;
+    padding-top: 2.7rem !important;
     padding-bottom: 4rem;
 }
 
+/* Shrink the top header bar (keep it, so the ⋮ menu still works) so the
+   Market page selector sits just below it without overlap or a big gap. */
 header, [data-testid="stHeader"] {
     background: transparent !important;
+    height: 2.5rem !important;
+    min-height: 2.5rem !important;
 }
 
 h1, h2, h3, h4, p, label, span, div {
@@ -114,35 +128,35 @@ div[data-testid="stExpander"] {
 .market-badge-row {
     display: flex;
     align-items: center;
-    gap: 18px;
-    margin-bottom: 1.6rem;
+    gap: 12px;
+    margin-bottom: 0.8rem;
 }
 
 .market-code-box {
-    width: 96px; height: 96px;
-    border-radius: 28px;
+    width: 56px; height: 56px;
+    border-radius: 16px;
     background: #fff9ed;
     color: #1f2b18;
     display: flex; align-items: center; justify-content: center;
-    font-size: 38px; font-weight: 950; letter-spacing: -.5px;
+    font-size: 22px; font-weight: 950; letter-spacing: -.5px;
     border: 1px solid rgba(255,255,255,.7);
-    box-shadow: 0 24px 60px rgba(0,0,0,.25);
+    box-shadow: 0 12px 30px rgba(0,0,0,.22);
     flex-shrink: 0; line-height: 1;
 }
 
 .market-flag-box {
-    width: 96px; height: 96px;
-    border-radius: 28px;
+    width: 56px; height: 56px;
+    border-radius: 16px;
     background: #fff9ed;
     display: flex; align-items: center; justify-content: center;
     border: 1px solid rgba(255,255,255,.7);
-    box-shadow: 0 24px 60px rgba(0,0,0,.25);
+    box-shadow: 0 12px 30px rgba(0,0,0,.22);
     flex-shrink: 0;
 }
 
 .drawn-flag {
-    width: 64px; height: 42px;
-    border-radius: 10px;
+    width: 38px; height: 25px;
+    border-radius: 6px;
     box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
     position: relative; overflow: hidden; flex-shrink: 0;
 }
@@ -191,7 +205,7 @@ div[data-testid="stExpander"] {
 }
 
 .flag-glb {
-    width: 58px; height: 58px; border-radius: 50%;
+    width: 36px; height: 36px; border-radius: 50%;
     background:
         radial-gradient(circle at 35% 35%, #6ee7b7 0 12%, transparent 13%),
         radial-gradient(circle at 65% 60%, #22c55e  0 18%, transparent 19%),
@@ -200,33 +214,36 @@ div[data-testid="stExpander"] {
 
 .market-title {
     font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(52px, 6.5vw, 96px);
-    line-height: .92; letter-spacing: -3.5px;
+    font-size: clamp(26px, 3vw, 40px);
+    line-height: 1; letter-spacing: -1.2px;
     font-weight: 500; color: var(--cream);
-    margin-bottom: 1.2rem;
+    margin-bottom: 0;
 }
 
 .market-subtitle {
     color: var(--muted);
-    line-height: 1.65; max-width: 640px;
-    font-size: 1rem; margin-bottom: 1.3rem;
+    line-height: 1.4; max-width: 640px;
+    font-size: 0.78rem; margin-bottom: 0.7rem;
 }
 
 div[data-testid="stTextInput"],
 div[data-testid="stSelectbox"] {
     background: rgba(255,255,255,.075) !important;
     border: 1px solid rgba(255,255,255,.14) !important;
-    border-radius: 999px !important;
-    padding: .55rem .85rem .35rem !important;
-    box-shadow: 0 14px 34px rgba(0,0,0,.14) !important;
+    border-radius: 8px !important;
+    padding: 0 .65rem 0 !important;
+    box-shadow: 0 6px 16px rgba(0,0,0,.1) !important;
 }
 
 div[data-testid="stTextInput"] label,
 div[data-testid="stSelectbox"] label {
     color: #fff5dc !important;
-    font-weight: 950 !important;
-    font-size: .82rem !important;
+    font-weight: 900 !important;
+    font-size: .58rem !important;
+    line-height: 1.05 !important;
     background: transparent !important;
+    margin-bottom: 0 !important;
+    min-height: 0 !important;
 }
 
 div[data-testid="stNumberInput"] label,
@@ -411,10 +428,10 @@ div[data-testid="stPlotlyChart"] {
 }
 
 @media (max-width: 900px) {
-    .market-title { font-size: 52px; letter-spacing: -2.5px; }
+    .market-title { font-size: 34px; letter-spacing: -1.2px; }
     .chart-wrap { border-radius: 24px; padding: .75rem; }
-    .market-code-box, .market-flag-box { width: 80px; height: 80px; border-radius: 22px; }
-    .market-code-box { font-size: 30px; }
+    .market-code-box, .market-flag-box { width: 50px; height: 50px; border-radius: 14px; }
+    .market-code-box { font-size: 20px; }
 }
 
 div[data-testid="stExpander"],
@@ -511,10 +528,10 @@ div[data-testid="stExpander"] svg {
 .premium-table-wrap {
     background: rgba(255,249,237,.96);
     border-radius: 16px;
-    overflow: hidden;
     box-shadow: 0 14px 40px rgba(0,0,0,.18);
     border: 1px solid rgba(31,43,24,.10);
     max-height: 400px;
+    overflow-x: auto;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #8eb957 rgba(255,249,237,.96);
@@ -537,7 +554,7 @@ div[data-testid="stExpander"] svg {
 .premium-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12.5px;
+    font-size: 10px;
     font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace, ui-sans-serif;
 }
 
@@ -545,10 +562,10 @@ div[data-testid="stExpander"] svg {
     background: #1f2b18;
     color: #fff5dc;
     font-weight: 800;
-    font-size: 13px;
+    font-size: 9.5px;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
-    padding: 10px 11px;
+    letter-spacing: 0.04em;
+    padding: 4px 6px;
     text-align: right;
     position: sticky;
     top: 0;
@@ -559,16 +576,16 @@ div[data-testid="stExpander"] svg {
 
 .premium-table thead th:first-child {
     text-align: left;
-    padding-left: 13px;
+    padding-left: 8px;
 }
 
 .premium-table tbody td {
-    padding: 8px 13px;
+    padding: 3px 6px;
     text-align: right;
     color: #263522;
     font-weight: 600;
     border-bottom: 1px solid rgba(31,43,24,.07);
-    font-size: 15px;
+    font-size: 10.5px;
     white-space: nowrap;
 }
 
@@ -576,7 +593,7 @@ div[data-testid="stExpander"] svg {
     text-align: left;
     color: #3f5f38;
     font-weight: 700;
-    padding-left: 13px;
+    padding-left: 8px;
 }
 
 .premium-table tbody tr:hover td {
@@ -666,19 +683,19 @@ td.vol-cell {
 
 .price-metric-label {
     color: rgba(255,245,220,.55);
-    font-size: 0.78rem;
+    font-size: 0.62rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
-    margin-bottom: 0.25rem;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.18rem;
 }
 
 .price-metric-value {
     color: var(--cream);
-    font-size: 1.75rem;
+    font-size: 1.2rem;
     font-weight: 800;
     line-height: 1.1;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.4px;
 }
 
 .price-metric-trigger-hit  { color: #f87171 !important; }
@@ -694,48 +711,48 @@ td.vol-cell {
 /* ── Reinvest summary (left col, dark-glass) ───────────────────────────────── */
 
 .reinvest-summary-section {
-    margin-top: 1.2rem;
-    padding: 1.1rem 1.1rem;
+    margin-top: 0.6rem;
+    padding: 0.6rem 0.7rem;
     background: rgba(255,255,255,.04);
     border: 1px solid rgba(255,255,255,.085);
-    border-radius: 15px;
+    border-radius: 13px;
     box-shadow: 0 4px 18px rgba(0,0,0,.12);
 }
 
 .reinvest-summary-title {
     color: rgba(255,245,220,.70);
-    font-size: 0.78rem;
+    font-size: 0.68rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.09em;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.4rem;
 }
 
 .reinvest-metric-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
 }
 
 .reinvest-metric {
     background: rgba(255,255,255,.038);
     border: 1px solid rgba(255,255,255,.065);
-    border-radius: 11px;
-    padding: 0.7rem 0.85rem;
+    border-radius: 9px;
+    padding: 0.35rem 0.45rem;
 }
 
 .reinvest-metric-label {
     color: rgba(255,245,220,.52);
-    font-size: 0.72rem;
+    font-size: 0.6rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 0.22rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.1rem;
 }
 
 .reinvest-metric-value {
     color: #e8e0cc;
-    font-size: 1.5rem;
+    font-size: 0.86rem;
     font-weight: 700;
     letter-spacing: -0.3px;
     line-height: 1.15;
@@ -743,20 +760,145 @@ td.vol-cell {
 
 .reinvest-caption {
     color: rgba(255,245,220,.36);
-    font-size: 0.58rem;
-    margin-top: 0.5rem;
-    line-height: 1.45;
+    font-size: 0.56rem;
+    margin-top: 0.3rem;
+    line-height: 1.4;
+}
+
+/* ── Compact controls (ticker / trigger / dates / reinvest inputs) ──────────── */
+[data-testid="stVerticalBlock"] { gap: 0.45rem; }
+
+[data-testid="stWidgetLabel"],
+.stTextInput label, .stSelectbox label, .stNumberInput label {
+    margin-bottom: 0.1rem !important;
+}
+[data-testid="stWidgetLabel"] p,
+.stTextInput label, .stSelectbox label, .stNumberInput label {
+    font-size: 0.7rem !important;
+    line-height: 1.1 !important;
+    color: rgba(255,245,220,.6) !important;
+}
+
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    height: 1.1rem !important;
+    line-height: 1.1rem !important;
+    font-size: 0.8rem !important;
+}
+
+/* Kill baseweb's built-in ~40px min-height on inputs and select controls */
+[data-testid="stTextInput"] div[data-baseweb="input"],
+[data-testid="stTextInput"] div[data-baseweb="base-input"],
+[data-testid="stNumberInput"] div[data-baseweb="input"],
+[data-testid="stNumberInput"] div[data-baseweb="base-input"],
+[data-testid="stSelectbox"] [data-baseweb="select"] > div {
+    min-height: 1.1rem !important;
+}
+[data-testid="stSelectbox"] [data-baseweb="select"] > div > div {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1.1rem !important;
+}
+
+[data-testid="stCheckbox"] { margin-top: 0.05rem; }
+[data-testid="stCheckbox"] label { font-size: 0.8rem !important; }
+
+/* Description sentences (st.caption) — as small as possible */
+[data-testid="stCaptionContainer"],
+[data-testid="stCaptionContainer"] p,
+small, .stCaption {
+    font-size: 0.66rem !important;
+    line-height: 1.35 !important;
+    color: rgba(255,245,220,.5) !important;
+}
+
+/* Section subheaders (st.subheader) — tighter */
+[data-testid="stHeading"] h1,
+[data-testid="stHeading"] h2,
+[data-testid="stHeading"] h3 {
+    font-size: 1.15rem !important;
+    margin-bottom: 0.15rem !important;
+    padding-top: 0.2rem !important;
+}
+
+/* Tabs: compact so all fit on one row */
+[data-testid="stTabs"] [data-baseweb="tab-list"] {
+    gap: 0.15rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+[data-testid="stTabs"] [data-baseweb="tab"] {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    min-width: auto !important;
+}
+[data-testid="stTabs"] [data-baseweb="tab"] p,
+[data-testid="stTabs"] [data-baseweb="tab"] div {
+    font-size: 0.8rem !important;
+    white-space: nowrap;
 }
 
 @media (max-width: 768px) {
     .snap-metrics-row { gap: 6px; }
     .snap-metric { min-width: 80px; padding: 0.5rem 0.7rem; }
     .snap-metric-value { font-size: 0.85rem; }
-    .premium-table { font-size: 11.5px; }
+    .premium-table { font-size: 9px; }
+    .premium-table tbody td { font-size: 9px; padding: 2px 4px; }
+    .premium-table thead th { font-size: 8.5px; padding: 3px 4px; }
     .premium-table-wrap { max-height: 320px; }
     .price-metric-row { gap: 5px; }
     .price-metric { min-width: 78px; }
-    .reinvest-metric-grid { grid-template-columns: 1fr; }
+    .reinvest-metric-grid { grid-template-columns: repeat(3, 1fr); }
+
+    /* ── Mobile: stack ONLY the top-level layout columns (left/right).
+       :not(...) excludes horizontal blocks nested inside a column, so the
+       inner columns keep their Streamlit ratio (e.g. ticker/trigger 8:2). */
+    [data-testid="stHorizontalBlock"]:not([data-testid="stColumn"] *) {
+        flex-direction: column !important;
+        gap: 1.6rem !important;
+    }
+    [data-testid="stHorizontalBlock"]:not([data-testid="stColumn"] *) > [data-testid="stColumn"] {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+        min-width: 100% !important;
+    }
+    /* Inner columns: force ONE row, no wrap; keep their inline ratio untouched.
+       min-width:0 lets the narrow trigger column shrink instead of wrapping. */
+    [data-testid="stColumn"] [data-testid="stHorizontalBlock"] {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 0.4rem !important;
+    }
+    [data-testid="stColumn"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        min-width: 0 !important;
+    }
+
+    /* Kill the desktop alignment spacer that pushes the right tabs down */
+    .right-col-spacer { height: 0 !important; display: none !important; }
+
+    /* Tighten page padding so content uses full mobile width */
+    .main .block-container {
+        padding-left: 0.7rem !important;
+        padding-right: 0.7rem !important;
+        padding-top: 0.4rem !important;
+    }
+
+    /* Keep tabs on one row, horizontal-scroll if needed */
+    [data-testid="stTabs"] [data-baseweb="tab-list"] {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 0.1rem;
+    }
+    [data-testid="stTabs"] [data-baseweb="tab"] {
+        padding-left: 0.4rem !important;
+        padding-right: 0.4rem !important;
+    }
+    [data-testid="stTabs"] [data-baseweb="tab"] p,
+    [data-testid="stTabs"] [data-baseweb="tab"] div {
+        font-size: 0.72rem !important;
+    }
 }
 </style>
 """
@@ -824,16 +966,14 @@ def _parse_trigger(raw: str, fallback: float = TRIGGER_DEFAULT) -> float:
 
 
 def render_market_header(config: MarketConfig) -> None:
-    flag_class = get_flag_class(config)
+    flag_svg = get_flag_svg(config.key)
     st.markdown(
         f"""
 <div class="market-badge-row">
   <div class="market-code-box">{config.badge_code}</div>
-  <div class="market-flag-box">
-    <div class="drawn-flag {flag_class}"></div>
-  </div>
+  <div class="market-flag-box">{flag_svg}</div>
+  <div class="market-title">{config.name}</div>
 </div>
-<div class="market-title">{config.name}</div>
 <div class="market-subtitle">{config.subtitle}</div>
 """,
         unsafe_allow_html=True,
@@ -851,7 +991,7 @@ def render_controls(config: MarketConfig) -> UserInput:
     today = date.today()
     default_start = today.replace(year=today.year - 5)
 
-    col1, col2 = st.columns([1.5, 0.9])
+    col1, col2 = st.columns([7, 3])
     with col1:
         ticker_label = st.selectbox(
             "Ticker search",
@@ -995,7 +1135,6 @@ def _price_metrics_html(result: AnalysisResult, currency_code: str = "USD") -> s
 
 def render_price_tab(inp: UserInput, config: MarketConfig, result: AnalysisResult) -> None:
     currency_code = get_market_rule(config.key)["currency"]
-    st.markdown(_price_metrics_html(result, currency_code), unsafe_allow_html=True)
 
     col_a, col_b, col_c = st.columns([1, 1, 1])
     with col_a:
@@ -1024,7 +1163,7 @@ def render_price_tab(inp: UserInput, config: MarketConfig, result: AnalysisResul
         fig = price_chart(inp, config, result,
                           show_zigzag=show_zigzag, show_buys=show_buys)
         
-        fig.update_layout(height=660)                  
+        fig.update_layout(height=330)
         
         st.plotly_chart(fig, use_container_width=True)
 
@@ -1058,7 +1197,7 @@ def render_dividend_tab(config: MarketConfig, result: AnalysisResult) -> None:
     col_chart, col_table = st.columns([1.75, 1.0], gap="large")
 
     with col_chart:
-        fig.update_layout(height=420)
+        fig.update_layout(height=210)
         st.plotly_chart(fig, use_container_width=True)
 
     with col_table:
@@ -1089,7 +1228,7 @@ def render_dividend_tab(config: MarketConfig, result: AnalysisResult) -> None:
         return
 
     # 그래프: 전체 너비로 크게
-    fig.update_layout(height=420)
+    fig.update_layout(height=210)
     st.plotly_chart(fig, use_container_width=True)
 
     # Annual Dividend table: 10년 단위 병렬 배치
@@ -1131,7 +1270,7 @@ def render_dividend_tab(config: MarketConfig, result: AnalysisResult) -> None:
         for i in range(0, len(div_df), chunk_size)
     ]
 
-    cols = st.columns(min(len(chunks), 3), gap="medium")
+    cols = st.columns(min(len(chunks), 2), gap="medium")
     
     for i, chunk in enumerate(chunks):
     	with cols[i % len(cols)]:
@@ -1167,9 +1306,9 @@ def render_reinvest_controls_left(config: MarketConfig):
     default_tax = float(rule["tax_rate"])
 
     st.markdown(
-        '<div style="margin-top:1.05rem; color:rgba(255,245,220,.55); font-size:0.67rem;'
+        '<div style="margin-top:0.5rem; color:rgba(255,245,220,.55); font-size:0.64rem;'
         ' font-weight:800; text-transform:uppercase; letter-spacing:0.09em;'
-        ' margin-bottom:0.4rem;">배당 재투자 설정</div>',
+        ' margin-bottom:0.25rem;">배당 재투자 설정</div>',
         unsafe_allow_html=True,
     )
 
@@ -1191,14 +1330,8 @@ def render_reinvest_controls_left(config: MarketConfig):
             key=f"reinvest_monthly_{config.key}",
         )
 
-    tax_rate_pct = st.number_input(
-        "배당세율 (%)",
-        min_value=0.0,
-        max_value=60.0,
-        value=default_tax,
-        step=0.1,
-        key=f"reinvest_tax_{config.key}",
-    )
+    # 배당세율은 15.4% 고정 (입력칸 제거)
+    tax_rate_pct = 15.4
 
     reinvest_enabled = st.checkbox(
         "배당 재투자",
@@ -1218,7 +1351,9 @@ def render_reinvest_controls_left(config: MarketConfig):
     }, summary_container
 
 
-def render_reinvest_summary_left(reinvest, currency: str, tax_rate_pct: float) -> None:
+def render_reinvest_summary_left(
+    reinvest, currency: str, tax_rate_pct: float, trigger_count: int = 0
+) -> None:
     """Render dark-glass metric grid in the left column placeholder."""
     if reinvest is None:
         st.caption("배당 재투자 계산 불가 — 데이터 확인")
@@ -1244,9 +1379,10 @@ def render_reinvest_summary_left(reinvest, currency: str, tax_rate_pct: float) -
     	+ _rm("누적 순배당",     f'{sym}{s["Cumulative Net Dividend"]:,.0f} {currency}')
     	+ _rm("예상 순연배당",   format_amount(s["Current Estimated Annual Dividend Net"], currency))
     	+ _rm("Yield on Cost",   format_percent(s["Yield on Cost Net %"]))
+    	+ _rm("트리거 횟수",     f'{trigger_count}회')
     )
-    
-    
+
+
     """
     grid = (
         _rm("총 외부 투자금",    format_amount(s["Total External Invested"],          currency))

@@ -9,15 +9,15 @@ from .config import get_market_rule
 from .formatting import get_currency_symbol
 from .golden_engine import add_high_low_markers as _golden_add_hl_markers
 
-CHART_HEIGHT_PRICE = 720
-CHART_HEIGHT_REINVEST = 760
+CHART_HEIGHT_PRICE = 360
+CHART_HEIGHT_REINVEST = 380
 
 _LAYOUT_BASE = dict(
     height=CHART_HEIGHT_PRICE,
     paper_bgcolor="rgba(255,249,237,1)",
     plot_bgcolor="rgba(255,253,244,1)",
-    font=dict(color="#1f2b18", size=13),
-    margin=dict(l=40, r=30, t=60, b=45),
+    font=dict(color="#1f2b18", size=10),
+    margin=dict(l=36, r=26, t=48, b=38),
 )
 
 _AXIS = dict(showgrid=True, gridcolor="rgba(31,43,24,.08)")
@@ -45,9 +45,10 @@ def add_high_low_markers(
             y=[p.price for p in highs],
             mode="markers+text" if show_labels else "markers",
             name="ZigZag High",
-            marker=dict(size=11, color="#ca6702", symbol="triangle-up"),
+            marker=dict(size=7, color="#ca6702", symbol="triangle-up"),
             text=["H"] * len(highs) if show_labels else None,
             textposition="top center",
+            textfont=dict(size=8),
             hovertemplate="H: %{y:.2f}<br>%{x}<extra></extra>",
         ))
 
@@ -57,9 +58,10 @@ def add_high_low_markers(
             y=[p.price for p in lows],
             mode="markers+text" if show_labels else "markers",
             name="ZigZag Low",
-            marker=dict(size=11, color="#2453d6", symbol="triangle-down"),
+            marker=dict(size=7, color="#2453d6", symbol="triangle-down"),
             text=["L"] * len(lows) if show_labels else None,
             textposition="bottom center",
+            textfont=dict(size=8),
             hovertemplate="L: %{y:.2f}<br>%{x}<extra></extra>",
         ))
 
@@ -82,9 +84,10 @@ def add_trigger_buy_markers(
         y=backtest_df["Buy Price"],
         mode="markers+text",
         name="Trigger Buy",
-        marker=dict(size=13, color="#22c55e", symbol="star"),
+        marker=dict(size=8, color="#22c55e", symbol="star"),
         text=["Buy"] * len(backtest_df),
         textposition="top center",
+        textfont=dict(size=8),
         hovertemplate=(
             "Buy: %{y:.2f}<br>%{x}"
             "<extra></extra>"
@@ -139,9 +142,10 @@ def price_chart(
         y=[result.current_price],
         mode="markers+text",
         name="Current",
-        marker=dict(size=13, color=config.chart2, symbol="circle"),
+        marker=dict(size=8, color=config.chart2, symbol="circle"),
         text=["NOW"],
         textposition="bottom center",
+        textfont=dict(size=8),
     ))
 
     # ── 6. Trigger hline (ZigZag-based reference high) ────────────────────────
@@ -272,7 +276,7 @@ def investment_simulation_chart(
         title=title,
         hovermode="x unified",
         legend=dict(orientation="h", y=-0.13),
-        **{**_LAYOUT_BASE, "height": 660},
+        **{**_LAYOUT_BASE, "height": 330},
     )
     fig.update_xaxes(**_AXIS)
     fig.update_yaxes(**_AXIS)
@@ -323,7 +327,7 @@ def share_quantity_comparison_bar_chart(
         barmode="stack",
         hovermode="x",
         legend=dict(orientation="h", y=-0.18),
-        **{**_LAYOUT_BASE, "height": 360},
+        **{**_LAYOUT_BASE, "height": 180},
     )
     fig.update_xaxes(**_AXIS)
     fig.update_yaxes(title="Shares", **_AXIS)
@@ -416,7 +420,7 @@ def investment_quantity_chart(
         barmode="stack",
         hovermode="x unified",
         legend=dict(orientation="h", y=-0.13),
-        **{**_LAYOUT_BASE, "height": 660},
+        **{**_LAYOUT_BASE, "height": 330},
     )
     fig.update_xaxes(title="Year", type="category", **_AXIS)
     fig.update_yaxes(title="Shares", **_AXIS)
@@ -529,7 +533,7 @@ def annual_dividend_income_chart(
         barmode="stack",
         hovermode="x unified",
         legend=dict(orientation="h", y=-0.13),
-        **{**_LAYOUT_BASE, "height": 660},
+        **{**_LAYOUT_BASE, "height": 330},
     )
     fig.update_xaxes(title="Year", type="category", **_AXIS)
     fig.update_yaxes(title=y_axis_title, tickprefix=symbol, separatethousands=True, **_AXIS)
@@ -577,7 +581,7 @@ def investment_comparison_chart(
         title=f"{inp.ticker_label} / 배당 재투자 vs 미재투자",
         hovermode="x unified",
         legend=dict(orientation="h", y=-0.13),
-        **{**_LAYOUT_BASE, "height": 660},
+        **{**_LAYOUT_BASE, "height": 330},
     )
     fig.update_xaxes(**_AXIS)
     fig.update_yaxes(**_AXIS)
@@ -629,7 +633,7 @@ def score_gauge_chart(score: float, rank_label: str, rank_color: str) -> go.Figu
         title={"text": f"Global Cup Score — {rank_label}", "font": {"size": 15, "color": "#1f2b18"}},
     ))
     fig.update_layout(
-        height=260,
+        height=130,
         paper_bgcolor="rgba(255,249,237,1)",
         margin=dict(l=20, r=20, t=60, b=20),
     )

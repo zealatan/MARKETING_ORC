@@ -29,7 +29,7 @@ COLOR_HIGH = "#ca6702"
 COLOR_LOW  = "#005f73"
 COLOR_CREAM = "#e9d8a6"
 COLOR_MINT  = "#94d2bd"
-FONT_CHART_MARKER_TEXT = 20
+FONT_CHART_MARKER_TEXT = 9
 
 
 # ── Core ZigZag detection ──────────────────────────────────────────────────────
@@ -695,9 +695,9 @@ def add_high_low_markers(fig, close, name, ticker, threshold=0.10):
             name=f"{name} 전고점",
             marker=dict(
                 color=COLOR_HIGH,
-                size=16,
+                size=8,
                 symbol="triangle-up",
-                line=dict(width=2.0, color=COLOR_CREAM),
+                line=dict(width=1.0, color=COLOR_CREAM),
             ),
             text=["H"] * len(highs),
             textposition="top center",
@@ -712,9 +712,9 @@ def add_high_low_markers(fig, close, name, ticker, threshold=0.10):
             name=f"{name} 전저점",
             marker=dict(
                 color=COLOR_LOW,
-                size=16,
+                size=8,
                 symbol="triangle-down",
-                line=dict(width=2.0, color=COLOR_MINT),
+                line=dict(width=1.0, color=COLOR_MINT),
             ),
             text=["L"] * len(lows),
             textposition="bottom center",
