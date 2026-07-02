@@ -186,10 +186,10 @@ def _flag_svg_kr() -> str:
     )
     S, B = True, False
     corners = [
-        (17.1, 11.4, 33.69, [S, S, S]),   # top-left     Geon ☰
-        (72.9, 11.4, -33.69, [S, B, S]),  # top-right    Ri   ☲
-        (17.1, 48.6, -33.69, [B, S, B]),  # bottom-left  Gam  ☵
-        (72.9, 48.6, 33.69, [B, B, B]),   # bottom-right Gon  ☷
+        (17.1, 11.4, 123.69, [S, S, S]),  # top-left     Geon ☰
+        (72.9, 11.4, 56.31, [S, B, S]),   # top-right    Ri   ☲
+        (17.1, 48.6, 56.31, [B, S, B]),   # bottom-left  Gam  ☵
+        (72.9, 48.6, 123.69, [B, B, B]),  # bottom-right Gon  ☷
     ]
     tg = "".join(
         f'<g transform="translate({x},{y}) rotate({rot})" fill="#000">{_kr_trigram(pat)}</g>'

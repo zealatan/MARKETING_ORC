@@ -120,7 +120,7 @@ with right:
         # render_recent_data(price_trigger mode) is called inside render_price_tab
 
     with dividend_tab:
-        render_dividend_tab(config, analysis)
+        render_dividend_tab(config, analysis, inp=user_input)
         #render_recent_data(analysis, config=config)
 
     with invest_result_tab:

@@ -310,15 +310,18 @@ div[data-baseweb="popover"] * { color: #1f2b18 !important; }
 .stTabs [data-baseweb="tab-list"] {
     gap: .5rem !important;
     background: rgba(255,255,255,.06) !important;
-    padding: .5rem !important;
+    padding: .3rem !important;
     border-radius: 999px !important;
     border: 1px solid rgba(255,255,255,.09) !important;
     margin-bottom: .8rem !important;
+    justify-content: center !important;
 }
 
 .stTabs [data-baseweb="tab"] {
     border-radius: 999px !important;
-    padding: .78rem 1.5rem !important;
+    padding: .35rem 1.5rem !important;
+    min-height: 0 !important;
+    height: auto !important;
     color: rgba(255,245,220,.72) !important;
     font-weight: 600 !important;
     font-size: 1rem !important;
@@ -646,13 +649,29 @@ td.vol-cell {
 
 .div-badge {
     display: inline-block;
-    padding: 1px 6px;
+    padding: 0 3px;
     border-radius: 9999px;
-    font-size: 9.5px;
+    font-size: 7px;
     font-weight: 800;
-    margin-left: 5px;
+    margin-left: 2px;
     vertical-align: middle;
     line-height: 1.4;
+}
+
+/* Year column (with badge): shrink to minimum content width */
+.premium-table th:first-child,
+.premium-table td:first-child {
+    width: 1%;
+    white-space: nowrap;
+}
+
+/* 2nd & 3rd column headers: allow wrapping to 2 lines to reduce width */
+.premium-table th:nth-child(2),
+.premium-table th:nth-child(3) {
+    white-space: normal !important;
+    word-break: keep-all;
+    max-width: 4.5em;
+    line-height: 1.15;
 }
 
 .badge-div-latest  { background: rgba(111,143,63,.16); color: #6f8f3f; border: 1px solid rgba(111,143,63,.28); }
@@ -783,8 +802,8 @@ td.vol-cell {
 [data-testid="stNumberInput"] input {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
-    height: 1.1rem !important;
-    line-height: 1.1rem !important;
+    height: 30px !important;
+    line-height: 30px !important;
     font-size: 0.8rem !important;
 }
 
@@ -794,12 +813,13 @@ td.vol-cell {
 [data-testid="stNumberInput"] div[data-baseweb="input"],
 [data-testid="stNumberInput"] div[data-baseweb="base-input"],
 [data-testid="stSelectbox"] [data-baseweb="select"] > div {
-    min-height: 1.1rem !important;
+    min-height: 30px !important;
+    height: 30px !important;
 }
 [data-testid="stSelectbox"] [data-baseweb="select"] > div > div {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
-    line-height: 1.1rem !important;
+    line-height: 30px !important;
 }
 
 [data-testid="stCheckbox"] { margin-top: 0.05rem; }
@@ -828,6 +848,7 @@ small, .stCaption {
     gap: 0.15rem;
     flex-wrap: nowrap;
     overflow-x: auto;
+    justify-content: center !important;
 }
 [data-testid="stTabs"] [data-baseweb="tab"] {
     padding-left: 0.5rem !important;
@@ -970,7 +991,6 @@ def render_market_header(config: MarketConfig) -> None:
     st.markdown(
         f"""
 <div class="market-badge-row">
-  <div class="market-code-box">{config.badge_code}</div>
   <div class="market-flag-box">{flag_svg}</div>
   <div class="market-title">{config.name}</div>
 </div>
@@ -991,7 +1011,7 @@ def render_controls(config: MarketConfig) -> UserInput:
     today = date.today()
     default_start = today.replace(year=today.year - 5)
 
-    col1, col2 = st.columns([7, 3])
+    col1, col2 = st.columns([78, 22])
     with col1:
         ticker_label = st.selectbox(
             "Ticker search",
@@ -1136,6 +1156,9 @@ def _price_metrics_html(result: AnalysisResult, currency_code: str = "USD") -> s
 def render_price_tab(inp: UserInput, config: MarketConfig, result: AnalysisResult) -> None:
     currency_code = get_market_rule(config.key)["currency"]
 
+    # Chart placeholder first; controls rendered below and fill it afterwards.
+    chart_container = st.container()
+
     col_a, col_b, col_c = st.columns([1, 1, 1])
     with col_a:
         show_zigzag = st.checkbox(
@@ -1156,16 +1179,15 @@ def render_price_tab(inp: UserInput, config: MarketConfig, result: AnalysisResul
             key=f"show_snapshot_{config.key}",
         )
 
-    if show_snapshot:
-        # ── Show Market Snapshot in place of chart (no Annual Dividend) ───────
-        render_recent_data(result, inp=inp, config=config, mode="price_trigger", show_dividend=False)
-    else:
-        fig = price_chart(inp, config, result,
-                          show_zigzag=show_zigzag, show_buys=show_buys)
-        
-        fig.update_layout(height=330)
-        
-        st.plotly_chart(fig, use_container_width=True)
+    with chart_container:
+        if show_snapshot:
+            # ── Show Market Snapshot in place of chart (no Annual Dividend) ───
+            render_recent_data(result, inp=inp, config=config, mode="price_trigger", show_dividend=False)
+        else:
+            fig = price_chart(inp, config, result,
+                              show_zigzag=show_zigzag, show_buys=show_buys)
+            fig.update_layout(height=330)
+            st.plotly_chart(fig, use_container_width=True)
 
 
 # ── Dividend tab ──────────────────────────────────────────────────────────────
@@ -1216,10 +1238,10 @@ def render_dividend_tab(config: MarketConfig, result: AnalysisResult) -> None:
 """
 
 
-def render_dividend_tab(config: MarketConfig, result: AnalysisResult) -> None:
+def render_dividend_tab(config: MarketConfig, result: AnalysisResult, inp: UserInput = None) -> None:
     currency_code = get_market_rule(config.key)["currency"]
 
-    fig = dividend_bar_chart(config, result)
+    fig = dividend_bar_chart(config, result, inp=inp)
     if fig is None:
         st.info(
             "배당 데이터가 없습니다. "
@@ -1305,28 +1327,23 @@ def render_reinvest_controls_left(config: MarketConfig):
     currency = rule["currency"]
     default_tax = float(rule["tax_rate"])
 
-    st.markdown(
-        '<div style="margin-top:0.5rem; color:rgba(255,245,220,.55); font-size:0.64rem;'
-        ' font-weight:800; text-transform:uppercase; letter-spacing:0.09em;'
-        ' margin-bottom:0.25rem;">배당 재투자 설정</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown('<div style="height:1.4rem;"></div>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     with col1:
         initial_amount = st.number_input(
             f"초기 투자금 ({currency})",
-            min_value=0.0,
-            value=10000.0 if currency != "KRW" else 10000000.0,
-            step=1000.0 if currency != "KRW" else 1000000.0,
+            min_value=0,
+            value=10000 if currency != "KRW" else 10000000,
+            step=1000 if currency != "KRW" else 1000000,
             key=f"reinvest_initial_{config.key}",
         )
     with col2:
         monthly_amount = st.number_input(
             f"월 추가 투자금 ({currency})",
-            min_value=0.0,
-            value=0.0,
-            step=100.0 if currency != "KRW" else 100000.0,
+            min_value=0,
+            value=0,
+            step=100 if currency != "KRW" else 100000,
             key=f"reinvest_monthly_{config.key}",
         )
 
@@ -1371,13 +1388,13 @@ def render_reinvest_summary_left(
 
     sym = get_currency_symbol(currency)
     grid = (
-    	_rm("총 외부 투자금",    f'{sym}{s["Total External Invested"]:,.0f} {currency}')
-    	+ _rm("최종 평가금액",   f'{sym}{s["Final Portfolio Value"]:,.0f} {currency}')
+    	_rm("총 외부 투자금",    f'{sym}{s["Total External Invested"]:,.0f}')
+    	+ _rm("최종 평가금액",   f'{sym}{s["Final Portfolio Value"]:,.0f}')
     	+ _rm("총 수익률",       format_percent(s["Total Return %"]))
     	+ _rm("CAGR",            format_percent(s["CAGR %"]))
     	+ _rm("최종 보유수량",   f'{s["Final Shares"]:,.0f}')
-    	+ _rm("누적 순배당",     f'{sym}{s["Cumulative Net Dividend"]:,.0f} {currency}')
-    	+ _rm("예상 순연배당",   format_amount(s["Current Estimated Annual Dividend Net"], currency))
+    	+ _rm("누적 순배당",     f'{sym}{s["Cumulative Net Dividend"]:,.0f}')
+    	+ _rm("예상 순연배당",   f'{sym}{s["Current Estimated Annual Dividend Net"]:,.0f}')
     	+ _rm("Yield on Cost",   format_percent(s["Yield on Cost Net %"]))
     	+ _rm("트리거 횟수",     f'{trigger_count}회')
     )
@@ -1423,12 +1440,6 @@ def render_invest_simulation_tab(
     reinvest_enabled: bool = False,
 ) -> None:
     """No-reinvest baseline chart, with reinvest curve overlaid when checkbox is on."""
-    st.subheader("투자 시뮬레이션")
-    st.caption(
-        "기준은 항상 배당 미재투자입니다. "
-        "'배당 재투자' 체크 시 재투자 곡선이 같은 차트에 함께 표시됩니다."
-    )
-
     if no_reinvest is None or no_reinvest.timeline_df.empty:
         st.warning("시뮬레이션 타임라인 데이터가 없습니다.")
         return
@@ -1461,9 +1472,6 @@ def render_invest_quantity_tab(
     reinvest_enabled: bool = False,
 ) -> None:
     """Full-size yearly share-quantity bar chart for the 투자 수량 tab."""
-    st.subheader("연도별 보유 수량")
-    st.caption("배당 재투자 여부에 따른 연도별 주식 보유 수량 변화를 표시합니다.")
-
     if no_reinvest is None or no_reinvest.timeline_df.empty:
         st.warning("보유 수량 데이터를 계산할 수 없습니다. 초기 투자금과 가격 데이터를 확인하세요.")
         return
@@ -1500,9 +1508,6 @@ def render_annual_dividend_income_tab(
     reinvest_enabled: bool = False,
 ) -> None:
     """Full-size yearly dividend-income bar chart for the 연배당금 tab."""
-    st.subheader("연도별 연배당금")
-    st.caption("보유 수량과 배당 데이터를 기반으로 연도별 배당금을 표시합니다.")
-
     if no_reinvest is None:
         st.warning("연배당금 데이터를 계산할 수 없습니다. 초기 투자금과 가격 데이터를 확인하세요.")
         return

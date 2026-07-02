@@ -123,6 +123,7 @@ def price_chart(
         mode="lines",
         name=f"{inp.ticker} Close",
         line=dict(color=config.line, width=4),
+        showlegend=False,
     ))
 
     # ── 2 & 3. ZigZag H/L markers (golden engine) ────────────────────────────
@@ -160,10 +161,15 @@ def price_chart(
         annotation_position="bottom right",
     )
 
+    stock_name = inp.ticker_label.split(" / ")[0].strip()
     fig.update_layout(
-        title=f"{inp.ticker_label} / ZigZag · Trigger",
+        title=dict(text=stock_name, x=0.5, xanchor="center"),
         hovermode="x unified",
-        legend=dict(orientation="h", y=-0.13),
+        legend=dict(
+            orientation="h", y=-0.13,
+            x=0.5, xanchor="center",
+            font=dict(size=8),
+        ),
         **_LAYOUT_BASE,
     )
     fig.update_xaxes(**_AXIS)
@@ -173,7 +179,7 @@ def price_chart(
 
 # ── Remaining charts (unchanged) ──────────────────────────────────────────────
 
-def dividend_bar_chart(config: MarketConfig, result: AnalysisResult) -> go.Figure | None:
+def dividend_bar_chart(config: MarketConfig, result: AnalysisResult, inp=None) -> go.Figure | None:
     annual = result.annual_dividend_df
     if annual.empty:
         return None
@@ -185,7 +191,8 @@ def dividend_bar_chart(config: MarketConfig, result: AnalysisResult) -> go.Figur
         name="Annual Dividend per Share",
         marker=dict(color=config.chart1),
     ))
-    fig.update_layout(title="Annual Dividend per Share", **_LAYOUT_BASE)
+    title_text = inp.ticker_label.split(" / ")[0].strip() if inp else "Annual Dividend per Share"
+    fig.update_layout(title=dict(text=title_text, x=0.5, xanchor="center"), **_LAYOUT_BASE)
     fig.update_xaxes(**_AXIS)
     fig.update_yaxes(**_AXIS)
     return fig
@@ -214,7 +221,7 @@ def reinvest_timeline_chart(
     fig.update_layout(
         title=f"{inp.ticker_label} / Dividend Reinvestment Backtest",
         hovermode="x unified",
-        legend=dict(orientation="h", y=-0.13),
+        legend=dict(orientation="h", y=-0.13, font=dict(size=8)),
         **{**_LAYOUT_BASE, "height": CHART_HEIGHT_REINVEST},
     )
     fig.update_xaxes(**_AXIS)
@@ -268,14 +275,11 @@ def investment_simulation_chart(
             name="배당 재투자",
             line=dict(color=config.line, width=4),
         ))
-        title = f"{inp.ticker_label} / 배당 재투자 vs 미재투자"
-    else:
-        title = f"{inp.ticker_label} / 배당 미재투자 시뮬레이션"
-
+    stock_name = inp.ticker_label.split(" / ")[0].strip()
     fig.update_layout(
-        title=title,
+        title=dict(text=stock_name, x=0.5, xanchor="center"),
         hovermode="x unified",
-        legend=dict(orientation="h", y=-0.13),
+        legend=dict(orientation="h", y=-0.13, font=dict(size=8)),
         **{**_LAYOUT_BASE, "height": 330},
     )
     fig.update_xaxes(**_AXIS)
@@ -326,7 +330,7 @@ def share_quantity_comparison_bar_chart(
         title="보유 수량 비교",
         barmode="stack",
         hovermode="x",
-        legend=dict(orientation="h", y=-0.18),
+        legend=dict(orientation="h", y=-0.18, font=dict(size=8)),
         **{**_LAYOUT_BASE, "height": 180},
     )
     fig.update_xaxes(**_AXIS)
@@ -416,10 +420,10 @@ def investment_quantity_chart(
             ))
 
     fig.update_layout(
-        title="연도별 보유 수량",
+        title=dict(text=inp.ticker_label.split(" / ")[0].strip(), x=0.5, xanchor="center"),
         barmode="stack",
         hovermode="x unified",
-        legend=dict(orientation="h", y=-0.13),
+        legend=dict(orientation="h", y=-0.13, font=dict(size=8)),
         **{**_LAYOUT_BASE, "height": 330},
     )
     fig.update_xaxes(title="Year", type="category", **_AXIS)
@@ -529,10 +533,10 @@ def annual_dividend_income_chart(
         ))
 
     fig.update_layout(
-        title="연도별 연배당금",
+        title=dict(text=inp.ticker_label.split(" / ")[0].strip(), x=0.5, xanchor="center"),
         barmode="stack",
         hovermode="x unified",
-        legend=dict(orientation="h", y=-0.13),
+        legend=dict(orientation="h", y=-0.13, font=dict(size=8)),
         **{**_LAYOUT_BASE, "height": 330},
     )
     fig.update_xaxes(title="Year", type="category", **_AXIS)
@@ -580,7 +584,7 @@ def investment_comparison_chart(
     fig.update_layout(
         title=f"{inp.ticker_label} / 배당 재투자 vs 미재투자",
         hovermode="x unified",
-        legend=dict(orientation="h", y=-0.13),
+        legend=dict(orientation="h", y=-0.13, font=dict(size=8)),
         **{**_LAYOUT_BASE, "height": 330},
     )
     fig.update_xaxes(**_AXIS)
@@ -600,7 +604,7 @@ def share_count_chart(config: MarketConfig, timeline_df: pd.DataFrame) -> go.Fig
     fig.update_layout(
         title="Share Count Growth",
         hovermode="x unified",
-        legend=dict(orientation="h", y=-0.13),
+        legend=dict(orientation="h", y=-0.13, font=dict(size=8)),
         **{**_LAYOUT_BASE, "height": CHART_HEIGHT_REINVEST},
     )
     fig.update_xaxes(**_AXIS)
