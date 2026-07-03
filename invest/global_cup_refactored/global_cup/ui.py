@@ -35,6 +35,10 @@ from .market_config import (
 from .scoring import ScoreResult, calculate_score, get_rank_color, get_rank_medal
 
 
+# Hide the Plotly modebar so its top-right icons don't overlap centered titles.
+PLOTLY_CONFIG = {"displayModeBar": False}
+
+
 # ── CSS ────────────────────────────────────────────────────────────────────────
 
 _CSS = """
@@ -949,8 +953,8 @@ def render_top_nav() -> None:
 # ── Market selector ────────────────────────────────────────────────────────────
 
 def _get_market_from_query() -> str:
-    market = st.query_params.get("market", "Global")
-    return market if market in MARKETS else "Global"
+    market = st.query_params.get("market", "United States")
+    return market if market in MARKETS else "United States"
 
 
 def render_market_selector() -> MarketConfig:
@@ -1023,8 +1027,8 @@ def render_controls(config: MarketConfig) -> UserInput:
     with col2:
         raw_trigger = st.text_input(
             "Trigger %",
-            value="10",
-            placeholder="e.g. 10",
+            value=str(int(TRIGGER_DEFAULT)),
+            placeholder="e.g. 30",
             key=f"trigger_pct_{config.key}",
         )
 
@@ -1090,7 +1094,7 @@ def render_score_section(score_result: ScoreResult, result: AnalysisResult) -> N
     medal = get_rank_medal(score_result.rank_label)
 
     gauge_fig = score_gauge_chart(score_result.score, score_result.rank_label, rank_color)
-    st.plotly_chart(gauge_fig, use_container_width=True)
+    st.plotly_chart(gauge_fig, use_container_width=True, config=PLOTLY_CONFIG)
 
     cols = st.columns(4)
     cols[0].metric("Drawdown Score", f"{score_result.drawdown_score:.0f}/100")
@@ -1187,7 +1191,7 @@ def render_price_tab(inp: UserInput, config: MarketConfig, result: AnalysisResul
             fig = price_chart(inp, config, result,
                               show_zigzag=show_zigzag, show_buys=show_buys)
             fig.update_layout(height=330)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
 
 # ── Dividend tab ──────────────────────────────────────────────────────────────
@@ -1200,7 +1204,7 @@ def render_dividend_tab(config: MarketConfig, result: AnalysisResult) -> None:
             "한국 종목/ETF는 yfinance 배당 데이터가 누락될 수 있습니다."
         )
         return
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 """
 
 
@@ -1220,7 +1224,7 @@ def render_dividend_tab(config: MarketConfig, result: AnalysisResult) -> None:
 
     with col_chart:
         fig.update_layout(height=210)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
     with col_table:
         st.markdown(
@@ -1251,7 +1255,7 @@ def render_dividend_tab(config: MarketConfig, result: AnalysisResult, inp: UserI
 
     # 그래프: 전체 너비로 크게
     fig.update_layout(height=210)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
     # Annual Dividend table: 10년 단위 병렬 배치
     st.markdown(
@@ -1458,7 +1462,7 @@ def render_invest_simulation_tab(
         reinvest_df=reinvest_df,
         show_reinvest=show_reinvest,
     )
-    st.plotly_chart(value_fig, use_container_width=True)
+    st.plotly_chart(value_fig, use_container_width=True, config=PLOTLY_CONFIG)
 
 
 # ── Invest quantity tab (yearly share count bars) ─────────────────────────────
@@ -1494,7 +1498,7 @@ def render_invest_quantity_tab(
         st.warning("연도별 보유 수량 데이터를 추출할 수 없습니다. (Total Shares 컬럼 누락)")
         return
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
 
 # ── Annual dividend income tab (yearly net dividend bars) ─────────────────────
@@ -1533,7 +1537,7 @@ def render_annual_dividend_income_tab(
         )
         return
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
 
 # ── Dividend reinvest tab (chart + tables only) ────────────────────────────────
@@ -1556,10 +1560,12 @@ def render_dividend_reinvest_tab(
         st.plotly_chart(
             reinvest_timeline_chart(inp, config, selected.timeline_df),
             use_container_width=True,
+            config=PLOTLY_CONFIG,
         )
         st.plotly_chart(
             share_count_chart(config, selected.timeline_df),
             use_container_width=True,
+            config=PLOTLY_CONFIG,
         )
 
     if not selected.annual_df.empty:
@@ -1685,12 +1691,10 @@ def _dividend_table_html(div_df: pd.DataFrame, currency_code: str = "USD") -> st
             if col == year_col:
                 yr_str = format_year(val)
                 badge = ""
-                if yr_str == latest_year:
-                    badge = ' <span class="div-badge badge-div-latest">Latest</span>'
-                elif yr_str == highest_year:
-                    badge = ' <span class="div-badge badge-div-highest">High</span>'
+                if yr_str == highest_year:
+                    badge = ' <span class="div-badge badge-div-highest">H</span>'
                 elif yr_str == lowest_year:
-                    badge = ' <span class="div-badge badge-div-lowest">Low</span>'
+                    badge = ' <span class="div-badge badge-div-lowest">L</span>'
                 cells += f"<td>{yr_str}{badge}</td>"
             elif col == div_col:
                 cells += f"<td>{format_amount(val, currency_code)}</td>"

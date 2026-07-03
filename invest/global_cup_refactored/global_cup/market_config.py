@@ -310,7 +310,7 @@ MARKETS: Dict[str, MarketConfig] = {
         chart2="#e23636",
         line="#2453d6",
         bg_label="US DASHBOARD",
-        default_ticker_label="Vanguard S&P 500 ETF / VOO",
+        default_ticker_label="Invesco QQQ Trust / QQQ",
     ),
     "European Union": MarketConfig(
         key="European Union",

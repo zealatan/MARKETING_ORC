@@ -164,7 +164,7 @@ def price_chart(
     stock_name = inp.ticker_label.split(" / ")[0].strip()
     fig.update_layout(
         title=dict(text=stock_name, x=0.5, xanchor="center"),
-        hovermode="x unified",
+        hovermode="closest",
         legend=dict(
             orientation="h", y=-0.13,
             x=0.5, xanchor="center",
@@ -423,10 +423,11 @@ def investment_quantity_chart(
         title=dict(text=inp.ticker_label.split(" / ")[0].strip(), x=0.5, xanchor="center"),
         barmode="stack",
         hovermode="x unified",
-        legend=dict(orientation="h", y=-0.13, font=dict(size=8)),
-        **{**_LAYOUT_BASE, "height": 330},
+        legend=dict(orientation="h", yanchor="top", y=-0.22,
+                    x=0.5, xanchor="center", font=dict(size=8)),
+        **{**_LAYOUT_BASE, "height": 330, "margin": dict(l=36, r=26, t=48, b=64)},
     )
-    fig.update_xaxes(title="Year", type="category", **_AXIS)
+    fig.update_xaxes(title=None, type="category", **_AXIS)
     fig.update_yaxes(title="Shares", **_AXIS)
     return fig
 
@@ -536,10 +537,11 @@ def annual_dividend_income_chart(
         title=dict(text=inp.ticker_label.split(" / ")[0].strip(), x=0.5, xanchor="center"),
         barmode="stack",
         hovermode="x unified",
-        legend=dict(orientation="h", y=-0.13, font=dict(size=8)),
-        **{**_LAYOUT_BASE, "height": 330},
+        legend=dict(orientation="h", yanchor="top", y=-0.22,
+                    x=0.5, xanchor="center", font=dict(size=8)),
+        **{**_LAYOUT_BASE, "height": 330, "margin": dict(l=36, r=26, t=48, b=64)},
     )
-    fig.update_xaxes(title="Year", type="category", **_AXIS)
+    fig.update_xaxes(title=None, type="category", **_AXIS)
     fig.update_yaxes(title=y_axis_title, tickprefix=symbol, separatethousands=True, **_AXIS)
     return fig
 
