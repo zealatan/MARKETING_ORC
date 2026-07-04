@@ -67,12 +67,23 @@ if analysis is None:
 
 # ── Compute reinvest (shared by left summary + right chart tab) ───────────────
 
+# When "트리거 시 재투자" is on, the monthly amount is invested only on trigger
+# dates (from the trigger backtest) instead of every month.
+invest_on_trigger = reinvest_params["invest_on_trigger"]
+trigger_dates = (
+    list(analysis.backtest_df["Buy Date"])
+    if analysis.backtest_df is not None and "Buy Date" in analysis.backtest_df.columns
+    else []
+)
+
 reinvest_result = run_dividend_reinvest_backtest(
     close=analysis.close,
     dividends=analysis.dividends,
     initial_amount=reinvest_params["initial_amount"],
     monthly_amount=reinvest_params["monthly_amount"],
     tax_rate_pct=reinvest_params["tax_rate_pct"],
+    invest_on_trigger=invest_on_trigger,
+    trigger_dates=trigger_dates,
 )
 
 no_reinvest_result = run_dividend_reinvest_backtest(
@@ -82,6 +93,8 @@ no_reinvest_result = run_dividend_reinvest_backtest(
     monthly_amount=reinvest_params["monthly_amount"],
     tax_rate_pct=reinvest_params["tax_rate_pct"],
     reinvest_dividends=False,
+    invest_on_trigger=invest_on_trigger,
+    trigger_dates=trigger_dates,
 )
 
 reinvest_enabled = reinvest_params["reinvest_enabled"]

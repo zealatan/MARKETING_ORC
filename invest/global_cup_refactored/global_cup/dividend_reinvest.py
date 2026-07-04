@@ -36,6 +36,8 @@ def run_dividend_reinvest_backtest(
     monthly_amount: float,
     tax_rate_pct: float,
     reinvest_dividends: bool = True,
+    invest_on_trigger: bool = False,
+    trigger_dates=None,
 ) -> Optional[DividendReinvestResult]:
     close = close.dropna().copy()
     if close.empty or initial_amount <= 0:
@@ -60,6 +62,20 @@ def run_dividend_reinvest_backtest(
         d = _first_trade_date_of_month(close, y, m)
         if d is not None and d != close.index[0] and monthly_amount > 0:
             monthly_buy_dates.add(d)
+
+    # Recurring external buys: either monthly (default) or only on trigger days.
+    # In trigger mode the same `monthly_amount` is invested at each trigger event
+    # instead of every month.
+    if invest_on_trigger:
+        recurring_buy_dates = set()
+        for td in (trigger_dates or []):
+            d = _next_trade_date(close, pd.Timestamp(td))
+            if d is not None and d != close.index[0] and monthly_amount > 0:
+                recurring_buy_dates.add(d)
+        recurring_buy_label = "Trigger Buy"
+    else:
+        recurring_buy_dates = monthly_buy_dates
+        recurring_buy_label = "Monthly Buy"
 
     dividend_events_by_trade_date: Dict = {}
     for div_date, div_per_share in dividends.items():
@@ -95,12 +111,12 @@ def run_dividend_reinvest_backtest(
                 "External Invested": total_external_invested,
             })
 
-        if d in monthly_buy_dates:
+        if d in recurring_buy_dates:
             buy_shares = monthly_amount / price if price > 0 else 0.0
             shares += buy_shares
             total_external_invested += monthly_amount
             event_rows.append({
-                "Date": d, "Type": "Monthly Buy", "Price": price,
+                "Date": d, "Type": recurring_buy_label, "Price": price,
                 "Cash Amount": monthly_amount, "Gross Dividend": 0.0,
                 "Tax": 0.0, "Net Dividend": 0.0, "Dividend per Share": 0.0,
                 "Shares Bought": buy_shares, "Total Shares": shares,

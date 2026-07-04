@@ -235,6 +235,7 @@ def investment_simulation_chart(
     no_reinvest_df: pd.DataFrame,
     reinvest_df: pd.DataFrame | None = None,
     show_reinvest: bool = False,
+    trigger_dates=None,
 ) -> go.Figure:
     """No-reinvest baseline curve, with reinvest curve overlaid when requested.
 
@@ -275,6 +276,34 @@ def investment_simulation_chart(
             name="배당 재투자",
             line=dict(color=config.line, width=4),
         ))
+
+    # ── Trigger buy markers on the displayed value curve ──────────────────────
+    if trigger_dates is not None and len(trigger_dates) > 0:
+        marker_df = (
+            reinvest_df
+            if (show_reinvest and reinvest_df is not None and not reinvest_df.empty)
+            else no_reinvest_df
+        )
+        if marker_df is not None and "Portfolio Value" in marker_df.columns:
+            val_by_date = {
+                pd.Timestamp(d).normalize(): v
+                for d, v in zip(marker_df["Date"], marker_df["Portfolio Value"])
+            }
+            xs, ys = [], []
+            for td in trigger_dates:
+                key = pd.Timestamp(td).normalize()
+                if key in val_by_date:
+                    xs.append(key)
+                    ys.append(val_by_date[key])
+            if xs:
+                fig.add_trace(go.Scatter(
+                    x=xs, y=ys, mode="markers",
+                    name="트리거 매수",
+                    marker=dict(size=9, color="#22c55e", symbol="star",
+                                line=dict(width=1, color="#0b3d1a")),
+                    hovertemplate="트리거 매수<br>%{x|%Y-%m-%d}<extra></extra>",
+                ))
+
     stock_name = inp.ticker_label.split(" / ")[0].strip()
     fig.update_layout(
         title=dict(text=stock_name, x=0.5, xanchor="center"),

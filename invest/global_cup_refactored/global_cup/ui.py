@@ -1333,6 +1333,13 @@ def render_reinvest_controls_left(config: MarketConfig):
 
     st.markdown('<div style="height:1.4rem;"></div>', unsafe_allow_html=True)
 
+    # When trigger-investment mode is on, the recurring amount is spent at each
+    # trigger instead of monthly — reflect that in the field label.
+    trigger_mode = st.session_state.get("enable_trigger_investment", False)
+    recurring_label = (
+        f"트리거당 투자금 ({currency})" if trigger_mode else f"월 추가 투자금 ({currency})"
+    )
+
     col1, col2 = st.columns(2)
     with col1:
         initial_amount = st.number_input(
@@ -1344,7 +1351,7 @@ def render_reinvest_controls_left(config: MarketConfig):
         )
     with col2:
         monthly_amount = st.number_input(
-            f"월 추가 투자금 ({currency})",
+            recurring_label,
             min_value=0,
             value=0,
             step=100 if currency != "KRW" else 100000,
@@ -1354,12 +1361,22 @@ def render_reinvest_controls_left(config: MarketConfig):
     # 배당세율은 15.4% 고정 (입력칸 제거)
     tax_rate_pct = 15.4
 
-    reinvest_enabled = st.checkbox(
-        "배당 재투자",
-        value=True,
-        key="enable_dividend_reinvestment",
-        help="체크 시 세후 배당금을 자동 재투자합니다. 해제 시 배당금은 현금으로 누적됩니다.",
-    )
+    chk_col1, chk_col2 = st.columns(2)
+    with chk_col1:
+        reinvest_enabled = st.checkbox(
+            "배당 재투자",
+            value=True,
+            key="enable_dividend_reinvestment",
+            help="체크 시 세후 배당금을 자동 재투자합니다. 해제 시 배당금은 현금으로 누적됩니다.",
+        )
+    with chk_col2:
+        invest_on_trigger = st.checkbox(
+            "트리거 시 재투자",
+            value=False,
+            key="enable_trigger_investment",
+            help="체크 시 '월 추가 투자금'을 매월이 아니라 트리거 발동일에만 그 금액만큼 투입합니다. "
+                 "(초기 투자금은 그대로)",
+        )
 
     summary_container = st.container()
 
@@ -1369,6 +1386,7 @@ def render_reinvest_controls_left(config: MarketConfig):
         "tax_rate_pct": float(tax_rate_pct),
         "currency": currency,
         "reinvest_enabled": bool(reinvest_enabled),
+        "invest_on_trigger": bool(invest_on_trigger),
     }, summary_container
 
 
@@ -1455,12 +1473,19 @@ def render_invest_simulation_tab(
     )
 
     reinvest_df = reinvest.timeline_df if show_reinvest else None
+    trigger_dates = (
+        list(result.backtest_df["Buy Date"])
+        if result is not None and result.backtest_df is not None
+        and "Buy Date" in result.backtest_df.columns
+        else []
+    )
     value_fig = investment_simulation_chart(
         inp,
         config,
         no_reinvest.timeline_df,
         reinvest_df=reinvest_df,
         show_reinvest=show_reinvest,
+        trigger_dates=trigger_dates,
     )
     st.plotly_chart(value_fig, use_container_width=True, config=PLOTLY_CONFIG)
 
