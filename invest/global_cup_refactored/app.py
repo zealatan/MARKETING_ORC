@@ -103,7 +103,7 @@ with reinvest_summary_container:
 # ── Right column: tabs ────────────────────────────────────────────────────────
 
 with right:
-    st.markdown('<div class="right-col-spacer" style="height:18.0rem;"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="right-col-spacer" style="height:18.0rem; margin-top:-12rem;"></div>', unsafe_allow_html=True)
 
     price_tab, dividend_tab, invest_result_tab, invest_quantity_tab, annual_dividend_income_tab = st.tabs(
         [
@@ -153,7 +153,5 @@ with right:
             reinvest_enabled=reinvest_enabled,
         )
 
-st.caption(
-    "Data source: yfinance. "
-    "이 앱은 투자 조언이 아니라 시각화/백테스트 실험용 대시보드입니다. Not financial advice."
-)
+st.markdown('<div style="height:2.5rem;"></div>', unsafe_allow_html=True)
+st.caption("Copyright © zealatan")

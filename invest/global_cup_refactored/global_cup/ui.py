@@ -953,8 +953,8 @@ def render_top_nav() -> None:
 # ── Market selector ────────────────────────────────────────────────────────────
 
 def _get_market_from_query() -> str:
-    market = st.query_params.get("market", "United States")
-    return market if market in MARKETS else "United States"
+    market = st.query_params.get("market", "ETF")
+    return market if market in MARKETS else "ETF"
 
 
 def render_market_selector() -> MarketConfig:

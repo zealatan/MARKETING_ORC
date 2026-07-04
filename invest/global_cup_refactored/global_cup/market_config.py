@@ -284,6 +284,20 @@ _GLOBAL_TICKERS_BASE: Dict[str, str] = {
 # ── Market registry ────────────────────────────────────────────────────────────
 
 MARKETS: Dict[str, MarketConfig] = {
+    "ETF": MarketConfig(
+        key="ETF",
+        code="ETF",
+        name="ETF",
+        flag="📊",
+        badge_code="ETF",
+        subtitle="글로벌 ETF의 배당, 전고점 대비 하락률, 트리거 신호를 확인합니다.",
+        tickers={},  # populated from all-country ETFs by build_ticker_dict at startup
+        chart1="#7a5cff",
+        chart2="#2574d9",
+        line="#7a5cff",
+        bg_label="ETF DASHBOARD",
+        default_ticker_label="Invesco QQQ Trust / QQQ",
+    ),
     "Korea": MarketConfig(
         key="Korea",
         code="KOR",

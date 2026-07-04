@@ -37,13 +37,44 @@ def load_tickers_csv(market_key: str) -> Optional[pd.DataFrame]:
         return None
 
 
+_COUNTRY_KEYS = ("United States", "Korea", "Japan", "European Union", "Global")
+_ETF_CATEGORIES = ("ETF", "Covered Call ETF")
+
+
 def build_ticker_dict(market_key: str) -> Optional[Dict[str, str]]:
-    """Return {label: ticker} from CSV, or None if CSV unavailable."""
+    """Return {label: ticker} for a market page.
+
+    - ``"ETF"``: every ETF (ETF + Covered Call ETF) aggregated across all
+      country CSVs, de-duplicated by ticker.
+    - Any country market: individual stocks only (category == ``"Stock"``);
+      ETFs are excluded so they live only on the ETF page.
+    Returns ``None`` when nothing is available.
+    """
+    if market_key == "ETF":
+        result: Dict[str, str] = {}
+        seen: set = set()
+        for country_key in _COUNTRY_KEYS:
+            df = load_tickers_csv(country_key)
+            if df is None or df.empty:
+                continue
+            for _, row in df.iterrows():
+                if str(row.get("category", "")).strip() not in _ETF_CATEGORIES:
+                    continue
+                label = str(row["label"]).strip()
+                ticker = str(row["ticker"]).strip()
+                if label and ticker and ticker not in seen:
+                    seen.add(ticker)
+                    result[label] = ticker
+        return result or None
+
     df = load_tickers_csv(market_key)
     if df is None or df.empty:
         return None
-    result: Dict[str, str] = {}
+    result = {}
     for _, row in df.iterrows():
+        category = str(row.get("category", "")).strip()
+        if category and category != "Stock":
+            continue  # skip ETFs on country pages; keep individual stocks only
         label = str(row["label"]).strip()
         ticker = str(row["ticker"]).strip()
         if label and ticker:
